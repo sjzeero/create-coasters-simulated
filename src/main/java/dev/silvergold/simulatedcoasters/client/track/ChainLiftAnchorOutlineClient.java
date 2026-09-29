@@ -1,46 +1,6 @@
-/*
- * Decompiled with CFR 0.152.
- * 
- * Could not load the following classes:
- *  com.simibubi.create.content.trains.track.TrackBlockOutline
- *  net.createmod.catnip.animation.AnimationTickHolder
- *  net.createmod.catnip.outliner.Outliner
- *  net.minecraft.client.Minecraft
- *  net.minecraft.client.multiplayer.ClientLevel
- *  net.minecraft.client.player.LocalPlayer
- *  net.minecraft.core.BlockPos
- *  net.minecraft.network.chat.Component
- *  net.minecraft.network.chat.MutableComponent
- *  net.minecraft.network.protocol.common.custom.CustomPacketPayload
- *  net.minecraft.world.InteractionHand
- *  net.minecraft.world.item.Items
- *  net.minecraft.world.level.BlockGetter
- *  net.minecraft.world.level.Level
- *  net.minecraft.world.level.LevelAccessor
- *  net.minecraft.world.level.block.entity.BlockEntity
- *  net.minecraft.world.level.block.state.BlockState
- *  net.minecraft.world.phys.BlockHitResult
- *  net.minecraft.world.phys.HitResult
- *  net.minecraft.world.phys.HitResult$Type
- *  net.minecraft.world.phys.Vec3
- *  net.minecraft.world.phys.shapes.VoxelShape
- *  net.neoforged.api.distmarker.Dist
- *  net.neoforged.api.distmarker.OnlyIn
- *  net.neoforged.neoforge.client.event.InputEvent$InteractionKeyMappingTriggered
- *  net.neoforged.neoforge.network.PacketDistributor
- *  org.jetbrains.annotations.Nullable
- */
 package dev.silvergold.simulatedcoasters.client.track;
 
 import com.simibubi.create.content.trains.track.TrackBlockOutline;
-import dev.silvergold.simulatedcoasters.client.track.AnchorPeerCurveHit;
-import dev.silvergold.simulatedcoasters.client.track.ChainLiftPlacementClientSounds;
-import dev.silvergold.simulatedcoasters.client.track.ChainLiftPreviewParticles;
-import dev.silvergold.simulatedcoasters.client.track.ChainLiftShaftPreviewRenderer;
-import dev.silvergold.simulatedcoasters.client.track.CoasterAnchorClientSpace;
-import dev.silvergold.simulatedcoasters.client.track.CoasterTrackOpenEndpointOutlineClient;
-import dev.silvergold.simulatedcoasters.client.track.HoveredCoasterCurve;
-import dev.silvergold.simulatedcoasters.client.track.SplineOrientedBoxOutlineRenderer;
 import dev.silvergold.simulatedcoasters.client.track.graph.CoasterPathGraphManagerClient;
 import dev.silvergold.simulatedcoasters.track.CoasterTrackPlacement;
 import dev.silvergold.simulatedcoasters.track.anchor.CoasterAnchorpointBlock;
@@ -64,480 +24,495 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.HitResult.Type;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.InputEvent.InteractionKeyMappingTriggered;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 
-@OnlyIn(value=Dist.CLIENT)
+@OnlyIn(Dist.CLIENT)
 public final class ChainLiftAnchorOutlineClient {
-    private static final String OUTLINER_KEY_NEAREST = "chain_lift_nearest_anchor";
-    private static final String OUTLINER_KEY_SELECTED = "chain_lift_selected_anchor";
-    private static final String OUTLINER_KEY_JUNCTION_PREFIX = "chain_lift_junction_";
-    private static final String OUTLINER_KEY_CURVE_HOVER = "chain_lift_curve_hover";
-    private static final String OUTLINER_KEY_SHAFT_NEAREST = "chain_lift_shaft_nearest";
-    private static final String OUTLINER_KEY_SHAFT_SELECTED = "chain_lift_shaft_selected";
-    private static final int OUTLINE_COLOR_VALID = 0xFFFFFF;
-    private static final int OUTLINE_COLOR_INVALID = 0xFF4747;
-    private static final int MAX_JUNCTION_MARKERS = 2;
-    private static final double HOVER_GRAPH_SEARCH_SQ = 4096.0;
-    @Nullable
-    private static BlockPos selectedAnchor;
-    @Nullable
-    private static Vec3 lockedShaftAxis;
-    private static boolean chainLiftActionBarShowing;
-    @Nullable
-    private static SpanPreviewCacheKey spanPreviewCacheKey;
-    @Nullable
-    private static CoasterPathGraphSpans.SpanPath spanPreviewCachedPath;
-    private static SpanPreviewStatus spanPreviewCachedStatus;
+   private static final String OUTLINER_KEY_NEAREST = "chain_lift_nearest_anchor";
+   private static final String OUTLINER_KEY_SELECTED = "chain_lift_selected_anchor";
+   private static final String OUTLINER_KEY_JUNCTION_PREFIX = "chain_lift_junction_";
+   private static final String OUTLINER_KEY_CURVE_HOVER = "chain_lift_curve_hover";
+   private static final String OUTLINER_KEY_SHAFT_NEAREST = "chain_lift_shaft_nearest";
+   private static final String OUTLINER_KEY_SHAFT_SELECTED = "chain_lift_shaft_selected";
+   private static final int OUTLINE_COLOR_VALID = 16777215;
+   private static final int OUTLINE_COLOR_INVALID = 16729927;
+   private static final int MAX_JUNCTION_MARKERS = 2;
+   private static final double HOVER_GRAPH_SEARCH_SQ = 4096.0;
+   @Nullable
+   private static BlockPos selectedAnchor;
+   @Nullable
+   private static Vec3 lockedShaftAxis;
+   private static boolean chainLiftActionBarShowing;
+   @Nullable
+   private static ChainLiftAnchorOutlineClient.SpanPreviewCacheKey spanPreviewCacheKey;
+   @Nullable
+   private static CoasterPathGraphSpans.SpanPath spanPreviewCachedPath;
+   private static ChainLiftAnchorOutlineClient.SpanPreviewStatus spanPreviewCachedStatus = ChainLiftAnchorOutlineClient.SpanPreviewStatus.NONE;
 
-    private ChainLiftAnchorOutlineClient() {
-    }
+   private ChainLiftAnchorOutlineClient() {
+   }
 
-    public static boolean onUseItemKey(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!event.isUseItem()) {
+   public static boolean onUseItemKey(InteractionKeyMappingTriggered event) {
+      if (!event.isUseItem()) {
+         return false;
+      } else {
+         Minecraft mc = Minecraft.getInstance();
+         if (mc.player == null || mc.level == null) {
             return false;
-        }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) {
+         } else if (mc.player.isShiftKeyDown()) {
             return false;
-        }
-        if (mc.player.isShiftKeyDown()) {
-            return false;
-        }
-        InteractionHand hand = event.getHand();
-        if (!mc.player.getItemInHand(hand).is(Items.CHAIN)) {
-            return false;
-        }
-        if (selectedAnchor != null) {
-            ChainLiftEndRef endRef;
-            SpanPreviewState preview = ChainLiftAnchorOutlineClient.resolveSpanPreview(mc);
-            if (preview.status() == SpanPreviewStatus.VALID && preview.hoverMarker() != null && lockedShaftAxis != null && (endRef = ChainLiftAnchorOutlineClient.buildEndRef(mc, preview)) != null) {
-                PacketDistributor.sendToServer((CustomPacketPayload)new ChainLiftCommitPayload(selectedAnchor, endRef, lockedShaftAxis), (CustomPacketPayload[])new CustomPacketPayload[0]);
-                ChainLiftAnchorOutlineClient.clearSelectionState();
-                event.setSwingHand(true);
+         } else {
+            InteractionHand hand = event.getHand();
+            if (!mc.player.getItemInHand(hand).is(Items.CHAIN)) {
+               return false;
+            } else if (selectedAnchor != null) {
+               ChainLiftAnchorOutlineClient.SpanPreviewState preview = resolveSpanPreview(mc);
+               if (preview.status() == ChainLiftAnchorOutlineClient.SpanPreviewStatus.VALID && preview.hoverMarker() != null && lockedShaftAxis != null) {
+                  ChainLiftEndRef endRef = buildEndRef(mc, preview);
+                  if (endRef != null) {
+                     PacketDistributor.sendToServer(new ChainLiftCommitPayload(selectedAnchor, endRef, lockedShaftAxis), new CustomPacketPayload[0]);
+                     clearSelectionState();
+                     event.setSwingHand(true);
+                  }
+               }
+
+               event.setCanceled(true);
+               return true;
+            } else {
+               BlockPos anchor = resolveAnchorTarget(mc);
+               if (anchor == null) {
+                  return false;
+               } else {
+                  float partialTick = AnimationTickHolder.getPartialTicks(mc.level);
+                  selectedAnchor = anchor.immutable();
+                  clearSpanPreviewCache();
+                  lockedShaftAxis = ChainLiftShaftPreviewRenderer.resolveShaftAxis(mc, anchor, partialTick);
+                  ChainLiftPlacementClientSounds.playStartAnchorSelect(mc, CoasterAnchorClientSpace.anchorCenterRenderWorld(mc.level, anchor, partialTick));
+                  event.setCanceled(true);
+                  event.setSwingHand(true);
+                  return true;
+               }
             }
-            event.setCanceled(true);
-            return true;
-        }
-        @Nullable BlockPos anchor = ChainLiftAnchorOutlineClient.resolveAnchorTarget(mc);
-        if (anchor == null) {
-            return false;
-        }
-        float partialTick = AnimationTickHolder.getPartialTicks((LevelAccessor)mc.level);
-        selectedAnchor = anchor.immutable();
-        ChainLiftAnchorOutlineClient.clearSpanPreviewCache();
-        lockedShaftAxis = ChainLiftShaftPreviewRenderer.resolveShaftAxis(mc, anchor, partialTick);
-        ChainLiftPlacementClientSounds.playStartAnchorSelect(mc, CoasterAnchorClientSpace.anchorCenterRenderWorld((Level)mc.level, anchor, partialTick));
-        event.setCanceled(true);
-        event.setSwingHand(true);
-        return true;
-    }
+         }
+      }
+   }
 
-    public static void clientTick(Minecraft mc) {
-        if (mc.player == null || mc.level == null || mc.screen != null) {
-            ChainLiftAnchorOutlineClient.clearAllOutlines();
-            return;
-        }
-        if (!ChainLiftAnchorOutlineClient.isHoldingChain(mc.player)) {
-            selectedAnchor = null;
-            lockedShaftAxis = null;
-            ChainLiftAnchorOutlineClient.clearAllOutlines();
-            ChainLiftAnchorOutlineClient.endChainLiftActionBarIfShowing(mc.player);
-            return;
-        }
-        float partialTick = AnimationTickHolder.getPartialTicks((LevelAccessor)mc.level);
-        Outliner outliner = Outliner.getInstance();
-        if (selectedAnchor == null) {
-            ChainLiftAnchorOutlineClient.clearSelectedOutlines(outliner);
-            @Nullable BlockPos target = ChainLiftAnchorOutlineClient.resolveAnchorTarget(mc);
+   public static void clientTick(Minecraft mc) {
+      if (mc.player == null || mc.level == null || mc.screen != null) {
+         clearAllOutlines();
+      } else if (!isHoldingChain(mc.player)) {
+         selectedAnchor = null;
+         lockedShaftAxis = null;
+         clearAllOutlines();
+         endChainLiftActionBarIfShowing(mc.player);
+      } else {
+         float partialTick = AnimationTickHolder.getPartialTicks(mc.level);
+         Outliner outliner = Outliner.getInstance();
+         if (selectedAnchor == null) {
+            clearSelectedOutlines(outliner);
+            BlockPos target = resolveAnchorTarget(mc);
             if (target != null) {
-                ChainLiftAnchorOutlineClient.showAnchorBlockOutline((Level)mc.level, target, OUTLINER_KEY_NEAREST, 0xFFFFFF);
-                Vec3 shaftAxis = ChainLiftShaftPreviewRenderer.resolveShaftAxis(mc, target, partialTick);
-                ChainLiftShaftPreviewRenderer.show(outliner, OUTLINER_KEY_SHAFT_NEAREST, target, shaftAxis);
+               showAnchorBlockOutline(mc.level, target, "chain_lift_nearest_anchor", 16777215);
+               Vec3 shaftAxis = ChainLiftShaftPreviewRenderer.resolveShaftAxis(mc, target, partialTick);
+               ChainLiftShaftPreviewRenderer.show(outliner, "chain_lift_shaft_nearest", target, shaftAxis);
             } else {
-                outliner.remove((Object)OUTLINER_KEY_NEAREST);
-                ChainLiftShaftPreviewRenderer.clear(outliner, OUTLINER_KEY_SHAFT_NEAREST);
+               outliner.remove("chain_lift_nearest_anchor");
+               ChainLiftShaftPreviewRenderer.clear(outliner, "chain_lift_shaft_nearest");
             }
-            return;
-        }
-        outliner.remove((Object)OUTLINER_KEY_NEAREST);
-        ChainLiftShaftPreviewRenderer.clear(outliner, OUTLINER_KEY_SHAFT_NEAREST);
-        if (mc.level.getBlockEntity(selectedAnchor) instanceof CoasterAnchorpointBlockEntity) {
-            ClientLevel clientLevel;
-            ClientLevel clientLevel2;
-            ChainLiftAnchorOutlineClient.showAnchorBlockOutline((Level)mc.level, selectedAnchor, OUTLINER_KEY_SELECTED, 0xFFFFFF);
-            if (lockedShaftAxis != null) {
-                ChainLiftShaftPreviewRenderer.show(outliner, OUTLINER_KEY_SHAFT_SELECTED, selectedAnchor, lockedShaftAxis);
-            } else {
-                ChainLiftShaftPreviewRenderer.clear(outliner, OUTLINER_KEY_SHAFT_SELECTED);
-            }
-            @Nullable SplineMarker hoverMarker = null;
-            CoasterPathGraphSpans.SpanPath spanPath = null;
-            SpanPreviewState preview = ChainLiftAnchorOutlineClient.resolveSpanPreview(mc);
-            hoverMarker = preview.hoverMarker();
-            spanPath = preview.spanPath();
-            SpanPreviewStatus spanStatus = preview.status();
-            int splineOutlineColor = ChainLiftAnchorOutlineClient.outlineColorForStatus(spanStatus);
-            ChainLiftAnchorOutlineClient.drawJunctionMarkers((Level)mc.level, selectedAnchor, partialTick, outliner, splineOutlineColor);
-            if (hoverMarker != null) {
-                SplineOrientedBoxOutlineRenderer.show(outliner, OUTLINER_KEY_CURVE_HOVER, hoverMarker.center(), hoverMarker.basis(), splineOutlineColor);
-            } else {
-                SplineOrientedBoxOutlineRenderer.clear(outliner, OUTLINER_KEY_CURVE_HOVER);
-            }
-            ChainLiftAnchorOutlineClient.updateSpanPreviewActionBar(mc.player, spanStatus);
-            if (spanStatus == SpanPreviewStatus.VALID && spanPath != null && (clientLevel2 = mc.level) instanceof ClientLevel && ((clientLevel = clientLevel2).getGameTime() & 1L) == 0L) {
-                ChainLiftPreviewParticles.spawnSpanAlongPath(clientLevel, spanPath, partialTick);
-            }
-        } else {
-            selectedAnchor = null;
-            lockedShaftAxis = null;
-            ChainLiftAnchorOutlineClient.clearAllOutlines();
-            ChainLiftAnchorOutlineClient.endChainLiftActionBarIfShowing(mc.player);
-            return;
-        }
-    }
+         } else {
+            outliner.remove("chain_lift_nearest_anchor");
+            ChainLiftShaftPreviewRenderer.clear(outliner, "chain_lift_shaft_nearest");
+            if (mc.level.getBlockEntity(selectedAnchor) instanceof CoasterAnchorpointBlockEntity) {
+               showAnchorBlockOutline(mc.level, selectedAnchor, "chain_lift_selected_anchor", 16777215);
+               if (lockedShaftAxis != null) {
+                  ChainLiftShaftPreviewRenderer.show(outliner, "chain_lift_shaft_selected", selectedAnchor, lockedShaftAxis);
+               } else {
+                  ChainLiftShaftPreviewRenderer.clear(outliner, "chain_lift_shaft_selected");
+               }
 
-    private static SpanPreviewState resolveSpanPreview(Minecraft mc) {
-        SpanPreviewCacheKey key;
-        if (selectedAnchor == null || mc.level == null) {
-            return new SpanPreviewState(null, null, SpanPreviewStatus.NONE);
-        }
-        float partialTick = AnimationTickHolder.getPartialTicks((LevelAccessor)mc.level);
-        CoasterPathGraph graph = CoasterPathGraphManagerClient.get((Level)mc.level);
-        @Nullable SplineMarker hoverMarker = null;
-        CoasterPathGraphSpans.SpanPath spanPath = null;
-        @Nullable BlockPos endAnchor = ChainLiftAnchorOutlineClient.resolveDirectConnectedAnchorLook(mc);
-        HoveredCoasterCurve hovered = null;
-        CoasterPathTrackFrame.GraphHit hoveredHit = null;
-        if (endAnchor == null || endAnchor.equals((Object)selectedAnchor)) {
-            hovered = CoasterTrackOpenEndpointOutlineClient.resolveHoveredCoasterCurve(mc);
-            if (hovered == null || !ChainLiftAnchorOutlineClient.isLookingAtCoasterCurve(mc)) {
-                hovered = null;
+               ChainLiftAnchorOutlineClient.SplineMarker hoverMarker = null;
+               CoasterPathGraphSpans.SpanPath spanPath = null;
+               ChainLiftAnchorOutlineClient.SpanPreviewState preview = resolveSpanPreview(mc);
+               hoverMarker = preview.hoverMarker();
+               spanPath = preview.spanPath();
+               ChainLiftAnchorOutlineClient.SpanPreviewStatus spanStatus = preview.status();
+               int splineOutlineColor = outlineColorForStatus(spanStatus);
+               drawJunctionMarkers(mc.level, selectedAnchor, partialTick, outliner, splineOutlineColor);
+               if (hoverMarker != null) {
+                  SplineOrientedBoxOutlineRenderer.show(outliner, "chain_lift_curve_hover", hoverMarker.center(), hoverMarker.basis(), splineOutlineColor);
+               } else {
+                  SplineOrientedBoxOutlineRenderer.clear(outliner, "chain_lift_curve_hover");
+               }
+
+               updateSpanPreviewActionBar(mc.player, spanStatus);
+               if (spanStatus == ChainLiftAnchorOutlineClient.SpanPreviewStatus.VALID && spanPath != null) {
+                  ClientLevel var9 = mc.level;
+                  if (var9 instanceof ClientLevel && (var9.getGameTime() & 1L) == 0L) {
+                     ChainLiftPreviewParticles.spawnSpanAlongPath(var9, spanPath, partialTick);
+                  }
+               }
             } else {
-                hoveredHit = ChainLiftAnchorOutlineClient.resolveHoverGraphHit((Level)mc.level, hovered, 0.0f);
+               selectedAnchor = null;
+               lockedShaftAxis = null;
+               clearAllOutlines();
+               endChainLiftActionBarIfShowing(mc.player);
             }
-        }
-        if ((key = ChainLiftAnchorOutlineClient.previewCacheKey(selectedAnchor, endAnchor, hoveredHit)).equals(spanPreviewCacheKey) && spanPreviewCachedPath != null) {
+         }
+      }
+   }
+
+   private static ChainLiftAnchorOutlineClient.SpanPreviewState resolveSpanPreview(Minecraft mc) {
+      if (selectedAnchor != null && mc.level != null) {
+         float partialTick = AnimationTickHolder.getPartialTicks(mc.level);
+         CoasterPathGraph graph = CoasterPathGraphManagerClient.get(mc.level);
+         ChainLiftAnchorOutlineClient.SplineMarker hoverMarker = null;
+         CoasterPathGraphSpans.SpanPath spanPath = null;
+         BlockPos endAnchor = resolveDirectConnectedAnchorLook(mc);
+         HoveredCoasterCurve hovered = null;
+         CoasterPathTrackFrame.GraphHit hoveredHit = null;
+         if (endAnchor == null || endAnchor.equals(selectedAnchor)) {
+            hovered = CoasterTrackOpenEndpointOutlineClient.resolveHoveredCoasterCurve(mc);
+            if (hovered != null && isLookingAtCoasterCurve(mc)) {
+               hoveredHit = resolveHoverGraphHit(mc.level, hovered, 0.0F);
+            } else {
+               hovered = null;
+            }
+         }
+
+         ChainLiftAnchorOutlineClient.SpanPreviewCacheKey key = previewCacheKey(selectedAnchor, endAnchor, hoveredHit);
+         if (key.equals(spanPreviewCacheKey) && spanPreviewCachedPath != null) {
             spanPath = spanPreviewCachedPath;
-        } else {
-            if (endAnchor != null && !endAnchor.equals((Object)selectedAnchor)) {
-                spanPath = CoasterPathGraphSpans.spanPathBetweenAnchors((Level)mc.level, graph, selectedAnchor, endAnchor, 0.0);
+         } else {
+            if (endAnchor != null && !endAnchor.equals(selectedAnchor)) {
+               spanPath = CoasterPathGraphSpans.spanPathBetweenAnchors(mc.level, graph, selectedAnchor, endAnchor, 0.0);
             } else if (hoveredHit != null) {
-                spanPath = CoasterPathGraphSpans.spanPathFromAnchor((Level)mc.level, graph, selectedAnchor, hoveredHit, 0.0);
+               spanPath = CoasterPathGraphSpans.spanPathFromAnchor(mc.level, graph, selectedAnchor, hoveredHit, 0.0);
             }
+
             spanPreviewCacheKey = key;
             spanPreviewCachedPath = spanPath;
-            spanPreviewCachedStatus = ChainLiftAnchorOutlineClient.resolveSpanPreviewStatus(mc, endAnchor != null || hoveredHit != null, spanPath);
-        }
-        if (endAnchor != null && !endAnchor.equals((Object)selectedAnchor)) {
-            hoverMarker = ChainLiftAnchorOutlineClient.resolveAnchorJunctionMarker((Level)mc.level, endAnchor, partialTick);
-        } else if (hovered != null) {
-            hoverMarker = ChainLiftAnchorOutlineClient.resolveHoverSplineMarker((Level)mc.level, hovered, partialTick);
-        }
-        return new SpanPreviewState(hoverMarker, spanPath, spanPreviewCachedStatus);
-    }
+            spanPreviewCachedStatus = resolveSpanPreviewStatus(mc, endAnchor != null || hoveredHit != null, spanPath);
+         }
 
-    private static SpanPreviewCacheKey previewCacheKey(BlockPos start, @Nullable BlockPos endAnchor, @Nullable CoasterPathTrackFrame.GraphHit hoveredHit) {
-        if (endAnchor != null && !endAnchor.equals((Object)start)) {
-            return new SpanPreviewCacheKey(ChainLiftSpanPathCache.graphEpoch(), start, endAnchor, null, null, 0.0);
-        }
-        if (hoveredHit != null) {
-            return new SpanPreviewCacheKey(ChainLiftSpanPathCache.graphEpoch(), start, null, hoveredHit.edge().from(), hoveredHit.edge().to(), hoveredHit.t());
-        }
-        return new SpanPreviewCacheKey(ChainLiftSpanPathCache.graphEpoch(), start, null, null, null, 0.0);
-    }
+         if (endAnchor != null && !endAnchor.equals(selectedAnchor)) {
+            hoverMarker = resolveAnchorJunctionMarker(mc.level, endAnchor, partialTick);
+         } else if (hovered != null) {
+            hoverMarker = resolveHoverSplineMarker(mc.level, hovered, partialTick);
+         }
 
-    @Nullable
-    private static CoasterPathTrackFrame.GraphHit resolveHoverGraphHit(Level level, HoveredCoasterCurve hovered, float partialTick) {
-        CoasterPathGraph graph = CoasterPathGraphManagerClient.get(level);
-        List<CoasterPathEdge> curveEdges = CoasterPathGraphManager.edgesForBezier(graph, hovered.bc());
-        if (curveEdges.isEmpty()) {
+         return new ChainLiftAnchorOutlineClient.SpanPreviewState(hoverMarker, spanPath, spanPreviewCachedStatus);
+      } else {
+         return new ChainLiftAnchorOutlineClient.SpanPreviewState(null, null, ChainLiftAnchorOutlineClient.SpanPreviewStatus.NONE);
+      }
+   }
+
+   private static ChainLiftAnchorOutlineClient.SpanPreviewCacheKey previewCacheKey(
+      BlockPos start, @Nullable BlockPos endAnchor, @Nullable CoasterPathTrackFrame.GraphHit hoveredHit
+   ) {
+      if (endAnchor != null && !endAnchor.equals(start)) {
+         return new ChainLiftAnchorOutlineClient.SpanPreviewCacheKey(ChainLiftSpanPathCache.graphEpoch(), start, endAnchor, null, null, 0.0);
+      } else {
+         return hoveredHit != null
+            ? new ChainLiftAnchorOutlineClient.SpanPreviewCacheKey(
+               ChainLiftSpanPathCache.graphEpoch(), start, null, hoveredHit.edge().from(), hoveredHit.edge().to(), hoveredHit.t()
+            )
+            : new ChainLiftAnchorOutlineClient.SpanPreviewCacheKey(ChainLiftSpanPathCache.graphEpoch(), start, null, null, null, 0.0);
+      }
+   }
+
+   @Nullable
+   private static CoasterPathTrackFrame.GraphHit resolveHoverGraphHit(Level level, HoveredCoasterCurve hovered, float partialTick) {
+      CoasterPathGraph graph = CoasterPathGraphManagerClient.get(level);
+      List<CoasterPathEdge> curveEdges = CoasterPathGraphManager.edgesForBezier(graph, hovered.bc());
+      return curveEdges.isEmpty() ? null : CoasterPathTrackFrame.nearestGraphHit(level, curveEdges, hovered.hoverWorld(), 4096.0, (double)partialTick);
+   }
+
+   private static void clearSpanPreviewCache() {
+      spanPreviewCacheKey = null;
+      spanPreviewCachedPath = null;
+      spanPreviewCachedStatus = ChainLiftAnchorOutlineClient.SpanPreviewStatus.NONE;
+   }
+
+   @Nullable
+   private static ChainLiftEndRef buildEndRef(Minecraft mc, ChainLiftAnchorOutlineClient.SpanPreviewState preview) {
+      BlockPos endAnchor = resolveDirectConnectedAnchorLook(mc);
+      if (endAnchor != null && !endAnchor.equals(selectedAnchor)) {
+         return ChainLiftEndRef.anchor(endAnchor);
+      } else {
+         ChainLiftAnchorOutlineClient.SplineMarker marker = preview.hoverMarker();
+         if (marker != null && marker.graphHit() != null) {
+            CoasterPathTrackFrame.GraphHit hit = marker.graphHit();
+            return ChainLiftEndRef.curve(hit.edge().from(), hit.edge().to(), hit.t());
+         } else {
             return null;
-        }
-        return CoasterPathTrackFrame.nearestGraphHit(level, curveEdges, hovered.hoverWorld(), 4096.0, Double.valueOf(partialTick));
-    }
+         }
+      }
+   }
 
-    private static void clearSpanPreviewCache() {
-        spanPreviewCacheKey = null;
-        spanPreviewCachedPath = null;
-        spanPreviewCachedStatus = SpanPreviewStatus.NONE;
-    }
+   private static void clearSelectionState() {
+      selectedAnchor = null;
+      lockedShaftAxis = null;
+      clearSpanPreviewCache();
+      endChainLiftActionBarIfShowing(Minecraft.getInstance().player);
+      clearAllOutlines();
+   }
 
-    @Nullable
-    private static ChainLiftEndRef buildEndRef(Minecraft mc, SpanPreviewState preview) {
-        @Nullable BlockPos endAnchor = ChainLiftAnchorOutlineClient.resolveDirectConnectedAnchorLook(mc);
-        if (endAnchor != null && !endAnchor.equals((Object)selectedAnchor)) {
-            return ChainLiftEndRef.anchor(endAnchor);
-        }
-        @Nullable SplineMarker marker = preview.hoverMarker();
-        if (marker == null || marker.graphHit() == null) {
-            return null;
-        }
-        CoasterPathTrackFrame.GraphHit hit = marker.graphHit();
-        return ChainLiftEndRef.curve(hit.edge().from(), hit.edge().to(), hit.t());
-    }
+   private static ChainLiftAnchorOutlineClient.SpanPreviewStatus resolveSpanPreviewStatus(
+      Minecraft mc, boolean hasHoverTarget, @Nullable CoasterPathGraphSpans.SpanPath spanPath
+   ) {
+      if (!hasHoverTarget) {
+         return ChainLiftAnchorOutlineClient.SpanPreviewStatus.NONE;
+      } else if (spanPath == null) {
+         return ChainLiftAnchorOutlineClient.SpanPreviewStatus.NOT_CONNECTED;
+      } else if (!CoasterPathGraphSpans.isWithinChainLiftSpan(spanPath.totalLength())) {
+         return ChainLiftAnchorOutlineClient.SpanPreviewStatus.TOO_LONG;
+      } else {
+         return selectedAnchor != null
+               && mc.level != null
+               && ChainLiftSpanOverlap.overlapsAnyExisting(mc.level, spanPath, selectedAnchor, (double)AnimationTickHolder.getPartialTicks(mc.level))
+            ? ChainLiftAnchorOutlineClient.SpanPreviewStatus.OVERLAPS
+            : ChainLiftAnchorOutlineClient.SpanPreviewStatus.VALID;
+      }
+   }
 
-    private static void clearSelectionState() {
-        selectedAnchor = null;
-        lockedShaftAxis = null;
-        ChainLiftAnchorOutlineClient.clearSpanPreviewCache();
-        ChainLiftAnchorOutlineClient.endChainLiftActionBarIfShowing(Minecraft.getInstance().player);
-        ChainLiftAnchorOutlineClient.clearAllOutlines();
-    }
+   private static int outlineColorForStatus(ChainLiftAnchorOutlineClient.SpanPreviewStatus status) {
+      return switch (status) {
+         case NONE, VALID -> 16777215;
+         case TOO_LONG, NOT_CONNECTED, OVERLAPS -> 16729927;
+      };
+   }
 
-    private static SpanPreviewStatus resolveSpanPreviewStatus(Minecraft mc, boolean hasHoverTarget, @Nullable CoasterPathGraphSpans.SpanPath spanPath) {
-        if (!hasHoverTarget) {
-            return SpanPreviewStatus.NONE;
-        }
-        if (spanPath == null) {
-            return SpanPreviewStatus.NOT_CONNECTED;
-        }
-        if (!CoasterPathGraphSpans.isWithinChainLiftSpan(spanPath.totalLength())) {
-            return SpanPreviewStatus.TOO_LONG;
-        }
-        if (selectedAnchor != null && mc.level != null && ChainLiftSpanOverlap.overlapsAnyExisting((Level)mc.level, spanPath, selectedAnchor, AnimationTickHolder.getPartialTicks((LevelAccessor)mc.level))) {
-            return SpanPreviewStatus.OVERLAPS;
-        }
-        return SpanPreviewStatus.VALID;
-    }
+   private static void updateSpanPreviewActionBar(LocalPlayer player, ChainLiftAnchorOutlineClient.SpanPreviewStatus status) {
+      boolean shouldShow = status == ChainLiftAnchorOutlineClient.SpanPreviewStatus.TOO_LONG
+         || status == ChainLiftAnchorOutlineClient.SpanPreviewStatus.NOT_CONNECTED
+         || status == ChainLiftAnchorOutlineClient.SpanPreviewStatus.OVERLAPS;
+      if (shouldShow) {
+         Component message = (Component)(switch (status) {
+            case TOO_LONG -> CoasterTrackPlacement.placementErrorMessage("simulatedcoasters.chain_lift.too_long");
+            case NOT_CONNECTED -> CoasterTrackPlacement.placementErrorMessage("simulatedcoasters.chain_lift.not_connected");
+            case OVERLAPS -> CoasterTrackPlacement.placementErrorMessage("simulatedcoasters.chain_lift.overlaps");
+            default -> Component.empty();
+         });
+         player.displayClientMessage(message, true);
+         chainLiftActionBarShowing = true;
+      } else if (chainLiftActionBarShowing) {
+         player.displayClientMessage(Component.empty(), true);
+         chainLiftActionBarShowing = false;
+      }
+   }
 
-    private static int outlineColorForStatus(SpanPreviewStatus status) {
-        return switch (status.ordinal()) {
-            default -> throw new MatchException(null, null);
-            case 0, 1 -> 0xFFFFFF;
-            case 2, 3, 4 -> 0xFF4747;
-        };
-    }
+   private static void endChainLiftActionBarIfShowing(@Nullable LocalPlayer player) {
+      if (player != null && chainLiftActionBarShowing) {
+         player.displayClientMessage(Component.empty(), true);
+         chainLiftActionBarShowing = false;
+      }
+   }
 
-    private static void updateSpanPreviewActionBar(LocalPlayer player, SpanPreviewStatus status) {
-        boolean shouldShow;
-        boolean bl = shouldShow = status == SpanPreviewStatus.TOO_LONG || status == SpanPreviewStatus.NOT_CONNECTED || status == SpanPreviewStatus.OVERLAPS;
-        if (shouldShow) {
-            MutableComponent message = switch (status.ordinal()) {
-                case 2 -> CoasterTrackPlacement.placementErrorMessage("simulatedcoasters.chain_lift.too_long");
-                case 3 -> CoasterTrackPlacement.placementErrorMessage("simulatedcoasters.chain_lift.not_connected");
-                case 4 -> CoasterTrackPlacement.placementErrorMessage("simulatedcoasters.chain_lift.overlaps");
-                default -> Component.empty();
-            };
-            player.displayClientMessage((Component)message, true);
-            chainLiftActionBarShowing = true;
-        } else if (chainLiftActionBarShowing) {
-            player.displayClientMessage((Component)Component.empty(), true);
-            chainLiftActionBarShowing = false;
-        }
-    }
+   private static void drawJunctionMarkers(Level level, BlockPos anchor, float partialTick, Outliner outliner, int color) {
+      List<ChainLiftAnchorOutlineClient.SplineMarker> markers = junctionMarkersAtAnchor(level, anchor, partialTick);
 
-    private static void endChainLiftActionBarIfShowing(@Nullable LocalPlayer player) {
-        if (player == null || !chainLiftActionBarShowing) {
-            return;
-        }
-        player.displayClientMessage((Component)Component.empty(), true);
-        chainLiftActionBarShowing = false;
-    }
-
-    private static void drawJunctionMarkers(Level level, BlockPos anchor, float partialTick, Outliner outliner, int color) {
-        List<SplineMarker> markers = ChainLiftAnchorOutlineClient.junctionMarkersAtAnchor(level, anchor, partialTick);
-        for (int i = 0; i < 2; ++i) {
-            String key = OUTLINER_KEY_JUNCTION_PREFIX + i;
-            if (i < markers.size()) {
-                SplineMarker marker = markers.get(i);
-                SplineOrientedBoxOutlineRenderer.show(outliner, key, marker.center(), marker.basis(), color);
-                continue;
-            }
+      for (int i = 0; i < 2; i++) {
+         String key = "chain_lift_junction_" + i;
+         if (i < markers.size()) {
+            ChainLiftAnchorOutlineClient.SplineMarker marker = markers.get(i);
+            SplineOrientedBoxOutlineRenderer.show(outliner, key, marker.center(), marker.basis(), color);
+         } else {
             SplineOrientedBoxOutlineRenderer.clear(outliner, key);
-        }
-    }
+         }
+      }
+   }
 
-    private static List<SplineMarker> junctionMarkersAtAnchor(Level level, BlockPos anchor, float partialTick) {
-        CoasterPathGraph graph = CoasterPathGraphManagerClient.get(level);
-        ArrayList<SplineMarker> markers = new ArrayList<SplineMarker>();
-        Vec3 nodeCenterPlot = CoasterPathGraphManager.sampleNodePositionPlotLocal(level, new CoasterPathNode(anchor, Vec3.ZERO));
-        for (CoasterPathTrackFrame.GraphHit hit : CoasterPathGraphSpans.anchorJunctionHits(level, graph, anchor, partialTick)) {
-            CoasterPathTrackFrame.TrackBasis basis = CoasterPathTrackFrame.trackBasisPlotLocalAtHit(level, hit);
-            markers.add(new SplineMarker(nodeCenterPlot, basis, hit));
-            if (markers.size() < 2) continue;
+   private static List<ChainLiftAnchorOutlineClient.SplineMarker> junctionMarkersAtAnchor(Level level, BlockPos anchor, float partialTick) {
+      CoasterPathGraph graph = CoasterPathGraphManagerClient.get(level);
+      List<ChainLiftAnchorOutlineClient.SplineMarker> markers = new ArrayList<>();
+      Vec3 nodeCenterPlot = CoasterPathGraphManager.sampleNodePositionPlotLocal(level, new CoasterPathNode(anchor, Vec3.ZERO));
+
+      for (CoasterPathTrackFrame.GraphHit hit : CoasterPathGraphSpans.anchorJunctionHits(level, graph, anchor, (double)partialTick)) {
+         CoasterPathTrackFrame.TrackBasis basis = CoasterPathTrackFrame.trackBasisPlotLocalAtHit(level, hit);
+         markers.add(new ChainLiftAnchorOutlineClient.SplineMarker(nodeCenterPlot, basis, hit));
+         if (markers.size() >= 2) {
             break;
-        }
-        return markers;
-    }
+         }
+      }
 
-    @Nullable
-    private static SplineMarker resolveAnchorJunctionMarker(Level level, BlockPos anchor, float partialTick) {
-        List<SplineMarker> markers = ChainLiftAnchorOutlineClient.junctionMarkersAtAnchor(level, anchor, partialTick);
-        return markers.isEmpty() ? null : markers.getFirst();
-    }
+      return markers;
+   }
 
-    @Nullable
-    private static SplineMarker resolveHoverSplineMarker(Level level, HoveredCoasterCurve hovered, float partialTick) {
-        @Nullable CoasterPathTrackFrame.GraphHit hit = ChainLiftAnchorOutlineClient.resolveHoverGraphHit(level, hovered, partialTick);
-        if (hit == null) {
+   @Nullable
+   private static ChainLiftAnchorOutlineClient.SplineMarker resolveAnchorJunctionMarker(Level level, BlockPos anchor, float partialTick) {
+      List<ChainLiftAnchorOutlineClient.SplineMarker> markers = junctionMarkersAtAnchor(level, anchor, partialTick);
+      return markers.isEmpty() ? null : markers.getFirst();
+   }
+
+   @Nullable
+   private static ChainLiftAnchorOutlineClient.SplineMarker resolveHoverSplineMarker(Level level, HoveredCoasterCurve hovered, float partialTick) {
+      CoasterPathTrackFrame.GraphHit hit = resolveHoverGraphHit(level, hovered, partialTick);
+      if (hit == null) {
+         return null;
+      } else {
+         Vec3 centerPlot = CoasterPathGraphManager.sampleEdgePositionPlotLocal(level, hit.edge(), hit.t());
+         CoasterPathTrackFrame.TrackBasis basis = CoasterPathTrackFrame.trackBasisPlotLocalAtHit(level, hit);
+         return new ChainLiftAnchorOutlineClient.SplineMarker(centerPlot, basis, hit);
+      }
+   }
+
+   @Nullable
+   private static BlockPos resolveAnchorTarget(Minecraft mc) {
+      if (mc.level == null) {
+         return null;
+      } else {
+         BlockPos direct = resolveDirectConnectedAnchorLook(mc);
+         if (direct != null) {
+            return isEligibleChainLiftStartAnchor(mc.level, direct) ? direct : null;
+         } else {
+            return resolveClosestEligibleStartAnchorOnCurve(mc);
+         }
+      }
+   }
+
+   private static boolean isEligibleChainLiftStartAnchor(Level level, BlockPos pos) {
+      return !(level.getBlockEntity(pos) instanceof CoasterAnchorpointBlockEntity be) ? false : be.legCount() >= 1 && !be.hasChainLiftShaft();
+   }
+
+   @Nullable
+   private static BlockPos resolveClosestEligibleStartAnchorOnCurve(Minecraft mc) {
+      if (mc.level != null && isLookingAtCoasterCurve(mc)) {
+         HoveredCoasterCurve hovered = CoasterTrackOpenEndpointOutlineClient.resolveHoveredCoasterCurve(mc);
+         if (hovered == null) {
             return null;
-        }
-        Vec3 centerPlot = CoasterPathGraphManager.sampleEdgePositionPlotLocal(level, hit.edge(), hit.t());
-        CoasterPathTrackFrame.TrackBasis basis = CoasterPathTrackFrame.trackBasisPlotLocalAtHit(level, hit);
-        return new SplineMarker(centerPlot, basis, hit);
-    }
+         } else {
+            float partialTick = AnimationTickHolder.getPartialTicks(mc.level);
+            BlockPos ep1 = (BlockPos)hovered.bc().bePositions.getFirst();
+            BlockPos ep2 = (BlockPos)hovered.bc().bePositions.getSecond();
+            BlockPos closest = null;
+            double bestDistSq = Double.POSITIVE_INFINITY;
 
-    @Nullable
-    private static BlockPos resolveAnchorTarget(Minecraft mc) {
-        if (mc.level == null) {
-            return null;
-        }
-        @Nullable BlockPos direct = ChainLiftAnchorOutlineClient.resolveDirectConnectedAnchorLook(mc);
-        if (direct != null) {
-            return ChainLiftAnchorOutlineClient.isEligibleChainLiftStartAnchor((Level)mc.level, direct) ? direct : null;
-        }
-        return ChainLiftAnchorOutlineClient.resolveClosestEligibleStartAnchorOnCurve(mc);
-    }
-
-    private static boolean isEligibleChainLiftStartAnchor(Level level, BlockPos pos) {
-        BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (!(blockEntity instanceof CoasterAnchorpointBlockEntity)) {
-            return false;
-        }
-        CoasterAnchorpointBlockEntity be = (CoasterAnchorpointBlockEntity)blockEntity;
-        return be.legCount() >= 1 && !be.hasChainLiftShaft();
-    }
-
-    @Nullable
-    private static BlockPos resolveClosestEligibleStartAnchorOnCurve(Minecraft mc) {
-        if (mc.level == null || !ChainLiftAnchorOutlineClient.isLookingAtCoasterCurve(mc)) {
-            return null;
-        }
-        @Nullable HoveredCoasterCurve hovered = CoasterTrackOpenEndpointOutlineClient.resolveHoveredCoasterCurve(mc);
-        if (hovered == null) {
-            return null;
-        }
-        float partialTick = AnimationTickHolder.getPartialTicks((LevelAccessor)mc.level);
-        BlockPos ep1 = (BlockPos)hovered.bc().bePositions.getFirst();
-        BlockPos ep2 = (BlockPos)hovered.bc().bePositions.getSecond();
-        BlockPos closest = null;
-        double bestDistSq = Double.POSITIVE_INFINITY;
-        for (BlockPos ep : new BlockPos[]{ep1, ep2}) {
-            double d;
-            if (!ChainLiftAnchorOutlineClient.isEligibleChainLiftStartAnchor((Level)mc.level, ep) || !((d = hovered.hoverWorld().distanceToSqr(CoasterTrackOpenEndpointOutlineClient.anchorJunctionWorld((Level)mc.level, ep, partialTick))) < bestDistSq)) continue;
-            bestDistSq = d;
-            closest = ep;
-        }
-        return closest;
-    }
-
-    private static boolean isHoldingChain(LocalPlayer player) {
-        return player.getMainHandItem().is(Items.CHAIN) || player.getOffhandItem().is(Items.CHAIN);
-    }
-
-    @Nullable
-    private static BlockPos resolveDirectConnectedAnchorLook(Minecraft mc) {
-        BlockHitResult bhr;
-        block7: {
-            block6: {
-                HitResult hit = mc.hitResult;
-                if (!(hit instanceof BlockHitResult)) break block6;
-                bhr = (BlockHitResult)hit;
-                if (hit.getType() == HitResult.Type.BLOCK) break block7;
+            for (BlockPos ep : new BlockPos[]{ep1, ep2}) {
+               if (isEligibleChainLiftStartAnchor(mc.level, ep)) {
+                  double d = hovered.hoverWorld().distanceToSqr(CoasterTrackOpenEndpointOutlineClient.anchorJunctionWorld(mc.level, ep, partialTick));
+                  if (d < bestDistSq) {
+                     bestDistSq = d;
+                     closest = ep;
+                  }
+               }
             }
+
+            return closest;
+         }
+      } else {
+         return null;
+      }
+   }
+
+   private static boolean isHoldingChain(LocalPlayer player) {
+      return player.getMainHandItem().is(Items.CHAIN) || player.getOffhandItem().is(Items.CHAIN);
+   }
+
+   @Nullable
+   private static BlockPos resolveDirectConnectedAnchorLook(Minecraft mc) {
+      HitResult hit = mc.hitResult;
+      if (hit instanceof BlockHitResult bhr && hit.getType() == Type.BLOCK) {
+         BlockPos pos = bhr.getBlockPos();
+         if (!(mc.level.getBlockState(pos).getBlock() instanceof CoasterAnchorpointBlock)) {
             return null;
-        }
-        BlockPos pos = bhr.getBlockPos();
-        if (!(mc.level.getBlockState(pos).getBlock() instanceof CoasterAnchorpointBlock)) {
-            return null;
-        }
-        BlockEntity blockEntity = mc.level.getBlockEntity(pos);
-        if (!(blockEntity instanceof CoasterAnchorpointBlockEntity)) {
-            return null;
-        }
-        CoasterAnchorpointBlockEntity be = (CoasterAnchorpointBlockEntity)blockEntity;
-        if (be.legCount() < 1) {
-            return null;
-        }
-        return pos;
-    }
+         }
 
-    private static boolean isLookingAtCoasterCurve(Minecraft mc) {
-        if (AnchorPeerCurveHit.isActive()) {
-            return true;
-        }
-        HitResult hit = mc.hitResult;
-        if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
-            return false;
-        }
-        return TrackBlockOutline.result != null;
-    }
+         if (mc.level.getBlockEntity(pos) instanceof CoasterAnchorpointBlockEntity be) {
+            if (be.legCount() < 1) {
+               return null;
+            }
 
-    private static void showAnchorBlockOutline(Level level, BlockPos pos, String outlinerKey, int color) {
-        BlockState state = level.getBlockState(pos);
-        if (!(state.getBlock() instanceof CoasterAnchorpointBlock)) {
-            Outliner.getInstance().remove((Object)outlinerKey);
-            return;
-        }
-        VoxelShape shape = state.getShape((BlockGetter)level, pos);
-        if (shape.isEmpty()) {
-            Outliner.getInstance().remove((Object)outlinerKey);
-            return;
-        }
-        Outliner.getInstance().showAABB((Object)outlinerKey, shape.bounds().move(pos)).colored(color).lineWidth(0.0625f);
-    }
+            return pos;
+         }
 
-    private static void clearSelectedOutlines(Outliner outliner) {
-        outliner.remove((Object)OUTLINER_KEY_SELECTED);
-        ChainLiftShaftPreviewRenderer.clear(outliner, OUTLINER_KEY_SHAFT_SELECTED);
-        SplineOrientedBoxOutlineRenderer.clear(outliner, OUTLINER_KEY_CURVE_HOVER);
-        for (int i = 0; i < 2; ++i) {
-            SplineOrientedBoxOutlineRenderer.clear(outliner, OUTLINER_KEY_JUNCTION_PREFIX + i);
-        }
-    }
+         return null;
+      }
 
-    private static void clearAllOutlines() {
-        Outliner outliner = Outliner.getInstance();
-        outliner.remove((Object)OUTLINER_KEY_NEAREST);
-        ChainLiftShaftPreviewRenderer.clear(outliner, OUTLINER_KEY_SHAFT_NEAREST);
-        ChainLiftAnchorOutlineClient.clearSelectedOutlines(outliner);
-    }
+      return null;
+   }
 
-    public static void clearOnLevelUnload() {
-        selectedAnchor = null;
-        lockedShaftAxis = null;
-        chainLiftActionBarShowing = false;
-        ChainLiftAnchorOutlineClient.clearSpanPreviewCache();
-        ChainLiftAnchorOutlineClient.clearAllOutlines();
-    }
+   private static boolean isLookingAtCoasterCurve(Minecraft mc) {
+      if (AnchorPeerCurveHit.isActive()) {
+         return true;
+      } else {
+         HitResult hit = mc.hitResult;
+         return hit != null && hit.getType() == Type.BLOCK ? false : TrackBlockOutline.result != null;
+      }
+   }
 
-    static {
-        spanPreviewCachedStatus = SpanPreviewStatus.NONE;
-    }
+   private static void showAnchorBlockOutline(Level level, BlockPos pos, String outlinerKey, int color) {
+      BlockState state = level.getBlockState(pos);
+      if (!(state.getBlock() instanceof CoasterAnchorpointBlock)) {
+         Outliner.getInstance().remove(outlinerKey);
+      } else {
+         VoxelShape shape = state.getShape(level, pos);
+         if (shape.isEmpty()) {
+            Outliner.getInstance().remove(outlinerKey);
+         } else {
+            Outliner.getInstance().showAABB(outlinerKey, shape.bounds().move(pos)).colored(color).lineWidth(0.0625F);
+         }
+      }
+   }
 
-    private record SpanPreviewState(@Nullable SplineMarker hoverMarker, @Nullable CoasterPathGraphSpans.SpanPath spanPath, SpanPreviewStatus status) {
-    }
+   private static void clearSelectedOutlines(Outliner outliner) {
+      outliner.remove("chain_lift_selected_anchor");
+      ChainLiftShaftPreviewRenderer.clear(outliner, "chain_lift_shaft_selected");
+      SplineOrientedBoxOutlineRenderer.clear(outliner, "chain_lift_curve_hover");
 
-    private static enum SpanPreviewStatus {
-        NONE,
-        VALID,
-        TOO_LONG,
-        NOT_CONNECTED,
-        OVERLAPS;
+      for (int i = 0; i < 2; i++) {
+         SplineOrientedBoxOutlineRenderer.clear(outliner, "chain_lift_junction_" + i);
+      }
+   }
 
-    }
+   private static void clearAllOutlines() {
+      Outliner outliner = Outliner.getInstance();
+      outliner.remove("chain_lift_nearest_anchor");
+      ChainLiftShaftPreviewRenderer.clear(outliner, "chain_lift_shaft_nearest");
+      clearSelectedOutlines(outliner);
+   }
 
-    private record SplineMarker(Vec3 center, CoasterPathTrackFrame.TrackBasis basis, @Nullable CoasterPathTrackFrame.GraphHit graphHit) {
-    }
+   public static void clearOnLevelUnload() {
+      selectedAnchor = null;
+      lockedShaftAxis = null;
+      chainLiftActionBarShowing = false;
+      clearSpanPreviewCache();
+      clearAllOutlines();
+   }
 
-    private record SpanPreviewCacheKey(int graphEpoch, BlockPos start, @Nullable BlockPos endAnchor, @Nullable BlockPos curveFrom, @Nullable BlockPos curveTo, double curveT) {
-    }
+   private static record SpanPreviewCacheKey(
+      int graphEpoch, BlockPos start, @Nullable BlockPos endAnchor, @Nullable BlockPos curveFrom, @Nullable BlockPos curveTo, double curveT
+   ) {
+   }
+
+   private static record SpanPreviewState(
+      @Nullable ChainLiftAnchorOutlineClient.SplineMarker hoverMarker,
+      @Nullable CoasterPathGraphSpans.SpanPath spanPath,
+      ChainLiftAnchorOutlineClient.SpanPreviewStatus status
+   ) {
+   }
+
+   private static enum SpanPreviewStatus {
+      NONE,
+      VALID,
+      TOO_LONG,
+      NOT_CONNECTED,
+      OVERLAPS;
+   }
+
+   private static record SplineMarker(Vec3 center, CoasterPathTrackFrame.TrackBasis basis, @Nullable CoasterPathTrackFrame.GraphHit graphHit) {
+   }
 }
-

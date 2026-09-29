@@ -1,52 +1,51 @@
-/*
- * Decompiled with CFR 0.152.
- * 
- * Could not load the following classes:
- *  dev.engine_room.flywheel.api.instance.InstanceType
- *  dev.engine_room.flywheel.api.layout.FloatRepr
- *  dev.engine_room.flywheel.api.layout.IntegerRepr
- *  dev.engine_room.flywheel.api.layout.LayoutBuilder
- *  dev.engine_room.flywheel.api.layout.ValueRepr
- *  dev.engine_room.flywheel.lib.instance.SimpleInstanceType
- *  dev.engine_room.flywheel.lib.util.ExtraMemoryOps
- *  net.minecraft.resources.ResourceLocation
- *  org.joml.Vector3fc
- *  org.lwjgl.system.MemoryUtil
- */
 package dev.silvergold.simulatedcoasters.client.track.bent;
 
 import dev.engine_room.flywheel.api.instance.InstanceType;
 import dev.engine_room.flywheel.api.layout.FloatRepr;
 import dev.engine_room.flywheel.api.layout.IntegerRepr;
 import dev.engine_room.flywheel.api.layout.LayoutBuilder;
-import dev.engine_room.flywheel.api.layout.ValueRepr;
 import dev.engine_room.flywheel.lib.instance.SimpleInstanceType;
 import dev.engine_room.flywheel.lib.util.ExtraMemoryOps;
-import dev.silvergold.simulatedcoasters.client.track.bent.BentRailInstance;
 import net.minecraft.resources.ResourceLocation;
-import org.joml.Vector3fc;
 import org.lwjgl.system.MemoryUtil;
 
 public final class BentRailInstanceType {
-    public static final ResourceLocation VERTEX_SHADER = ResourceLocation.fromNamespaceAndPath((String)"simulatedcoasters", (String)"instance/bent_rail.vert");
-    public static final ResourceLocation CULL_SHADER = ResourceLocation.fromNamespaceAndPath((String)"simulatedcoasters", (String)"instance/cull/bent_rail.glsl");
-    public static final InstanceType<BentRailInstance> INSTANCE = SimpleInstanceType.builder(BentRailInstance::new).layout(LayoutBuilder.create().vector("color", (ValueRepr)FloatRepr.NORMALIZED_UNSIGNED_BYTE, 4).vector("overlay", (ValueRepr)IntegerRepr.SHORT, 2).vector("light", (ValueRepr)FloatRepr.UNSIGNED_SHORT, 2).vector("prevSpine", (ValueRepr)FloatRepr.FLOAT, 3).vector("currSpine", (ValueRepr)FloatRepr.FLOAT, 3).vector("prevTangent", (ValueRepr)FloatRepr.FLOAT, 3).vector("currTangent", (ValueRepr)FloatRepr.FLOAT, 3).vector("prevLateral", (ValueRepr)FloatRepr.FLOAT, 3).vector("currLateral", (ValueRepr)FloatRepr.FLOAT, 3).scalar("modelAnchorY", (ValueRepr)FloatRepr.FLOAT).build()).writer((ptr, instance) -> {
-        MemoryUtil.memPutByte((long)ptr, (byte)instance.red);
-        MemoryUtil.memPutByte((long)(ptr + 1L), (byte)instance.green);
-        MemoryUtil.memPutByte((long)(ptr + 2L), (byte)instance.blue);
-        MemoryUtil.memPutByte((long)(ptr + 3L), (byte)instance.alpha);
-        ExtraMemoryOps.put2x16((long)(ptr + 4L), (int)instance.overlay);
-        ExtraMemoryOps.put2x16((long)(ptr + 8L), (int)instance.light);
-        ExtraMemoryOps.putVector3f((long)(ptr + 12L), (Vector3fc)instance.prevSpine);
-        ExtraMemoryOps.putVector3f((long)(ptr + 24L), (Vector3fc)instance.currSpine);
-        ExtraMemoryOps.putVector3f((long)(ptr + 36L), (Vector3fc)instance.prevTangent);
-        ExtraMemoryOps.putVector3f((long)(ptr + 48L), (Vector3fc)instance.currTangent);
-        ExtraMemoryOps.putVector3f((long)(ptr + 60L), (Vector3fc)instance.prevLateral);
-        ExtraMemoryOps.putVector3f((long)(ptr + 72L), (Vector3fc)instance.currLateral);
-        MemoryUtil.memPutFloat((long)(ptr + 84L), (float)instance.modelAnchorY);
-    }).vertexShader(VERTEX_SHADER).cullShader(CULL_SHADER).build();
+   public static final ResourceLocation VERTEX_SHADER = ResourceLocation.fromNamespaceAndPath("simulatedcoasters", "instance/bent_rail.vert");
+   public static final ResourceLocation CULL_SHADER = ResourceLocation.fromNamespaceAndPath("simulatedcoasters", "instance/cull/bent_rail.glsl");
+   public static final InstanceType<BentRailInstance> INSTANCE = SimpleInstanceType.builder(BentRailInstance::new)
+      .layout(
+         LayoutBuilder.create()
+            .vector("color", FloatRepr.NORMALIZED_UNSIGNED_BYTE, 4)
+            .vector("overlay", IntegerRepr.SHORT, 2)
+            .vector("light", FloatRepr.UNSIGNED_SHORT, 2)
+            .vector("prevSpine", FloatRepr.FLOAT, 3)
+            .vector("currSpine", FloatRepr.FLOAT, 3)
+            .vector("prevTangent", FloatRepr.FLOAT, 3)
+            .vector("currTangent", FloatRepr.FLOAT, 3)
+            .vector("prevLateral", FloatRepr.FLOAT, 3)
+            .vector("currLateral", FloatRepr.FLOAT, 3)
+            .scalar("modelAnchorY", FloatRepr.FLOAT)
+            .build()
+      )
+      .writer((ptr, instance) -> {
+         MemoryUtil.memPutByte(ptr, instance.red);
+         MemoryUtil.memPutByte(ptr + 1L, instance.green);
+         MemoryUtil.memPutByte(ptr + 2L, instance.blue);
+         MemoryUtil.memPutByte(ptr + 3L, instance.alpha);
+         ExtraMemoryOps.put2x16(ptr + 4L, instance.overlay);
+         ExtraMemoryOps.put2x16(ptr + 8L, instance.light);
+         ExtraMemoryOps.putVector3f(ptr + 12L, instance.prevSpine);
+         ExtraMemoryOps.putVector3f(ptr + 24L, instance.currSpine);
+         ExtraMemoryOps.putVector3f(ptr + 36L, instance.prevTangent);
+         ExtraMemoryOps.putVector3f(ptr + 48L, instance.currTangent);
+         ExtraMemoryOps.putVector3f(ptr + 60L, instance.prevLateral);
+         ExtraMemoryOps.putVector3f(ptr + 72L, instance.currLateral);
+         MemoryUtil.memPutFloat(ptr + 84L, instance.modelAnchorY);
+      })
+      .vertexShader(VERTEX_SHADER)
+      .cullShader(CULL_SHADER)
+      .build();
 
-    private BentRailInstanceType() {
-    }
+   private BentRailInstanceType() {
+   }
 }
-

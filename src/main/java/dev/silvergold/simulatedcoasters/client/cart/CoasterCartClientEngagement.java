@@ -1,25 +1,7 @@
-/*
- * Decompiled with CFR 0.152.
- * 
- * Could not load the following classes:
- *  dev.ryanhcode.sable.sublevel.SubLevel
- *  net.minecraft.client.multiplayer.ClientLevel
- *  net.minecraft.core.BlockPos
- *  net.minecraft.world.level.Level
- *  net.minecraft.world.level.block.Block
- *  net.minecraft.world.level.block.state.BlockState
- *  net.minecraft.world.level.block.state.properties.Property
- *  net.minecraft.world.phys.Vec3
- *  net.neoforged.api.distmarker.Dist
- *  net.neoforged.api.distmarker.OnlyIn
- *  org.jetbrains.annotations.Nullable
- */
 package dev.silvergold.simulatedcoasters.client.cart;
 
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.silvergold.simulatedcoasters.SimulatedCoastersBlocks;
-import dev.silvergold.simulatedcoasters.client.cart.CoasterCartClientFrameCache;
-import dev.silvergold.simulatedcoasters.client.cart.CoasterCartStaffStretchRenderGate;
 import dev.silvergold.simulatedcoasters.compat.PhysicsStaffClientDragProbe;
 import dev.silvergold.simulatedcoasters.track.cart.CoasterCartBlock;
 import dev.silvergold.simulatedcoasters.track.cart.CoasterCartRailSnapEligibility;
@@ -34,109 +16,117 @@ import java.util.UUID;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 
-@OnlyIn(value=Dist.CLIENT)
+@OnlyIn(Dist.CLIENT)
 public final class CoasterCartClientEngagement {
-    private static final Map<UUID, Boolean> CLIENT_DISENGAGED = new HashMap<UUID, Boolean>();
-    private static final Map<UUID, Long> ENDPOINT_COOLDOWN_UNTIL = new HashMap<UUID, Long>();
+   private static final Map<UUID, Boolean> CLIENT_DISENGAGED = new HashMap<>();
+   private static final Map<UUID, Long> ENDPOINT_COOLDOWN_UNTIL = new HashMap<>();
 
-    private CoasterCartClientEngagement() {
-    }
+   private CoasterCartClientEngagement() {
+   }
 
-    static void clearSubState(UUID id) {
-        CLIENT_DISENGAGED.remove(id);
-        ENDPOINT_COOLDOWN_UNTIL.remove(id);
-        CoasterCartStaffStretchRenderGate.clearSub(id);
-        CoasterCartClientFrameCache.clearSubLevelTrackAffinity(id);
-    }
+   static void clearSubState(UUID id) {
+      CLIENT_DISENGAGED.remove(id);
+      ENDPOINT_COOLDOWN_UNTIL.remove(id);
+      CoasterCartStaffStretchRenderGate.clearSub(id);
+      CoasterCartClientFrameCache.clearSubLevelTrackAffinity(id);
+   }
 
-    static void forceDisengaged(UUID subId) {
-        CLIENT_DISENGAGED.put(subId, Boolean.TRUE);
-    }
+   static void forceDisengaged(UUID subId) {
+      CLIENT_DISENGAGED.put(subId, Boolean.TRUE);
+   }
 
-    static boolean isClientEngaged(UUID subId) {
-        return CLIENT_DISENGAGED.getOrDefault(subId, true) == false;
-    }
+   static boolean isClientEngaged(UUID subId) {
+      return !CLIENT_DISENGAGED.getOrDefault(subId, true);
+   }
 
-    static double engagementSearchDistSq(UUID subId, boolean staffGrabbing) {
-        boolean wasDisengaged = CLIENT_DISENGAGED.getOrDefault(subId, true);
-        return CoasterCartTrackSnap.engagedTrackSearchDistSq(wasDisengaged, staffGrabbing);
-    }
+   static double engagementSearchDistSq(UUID subId, boolean staffGrabbing) {
+      boolean wasDisengaged = CLIENT_DISENGAGED.getOrDefault(subId, true);
+      return CoasterCartTrackSnap.engagedTrackSearchDistSq(wasDisengaged, staffGrabbing);
+   }
 
-    static boolean applyEngagementState(ClientLevel level, CoasterPathGraph graph, SubLevel sub, UUID subId, @Nullable CoasterPathTrackFrame.GraphHit hit, List<CoasterPathTraceEndpoints.OpenEndRef> openEndRefs) {
-        long cooldownUntil;
-        long gameTime = level.getGameTime();
-        boolean cooldownActive = gameTime < (cooldownUntil = ENDPOINT_COOLDOWN_UNTIL.getOrDefault(subId, 0L).longValue());
-        boolean wasDisengaged = CLIENT_DISENGAGED.getOrDefault(subId, true);
-        if (hit != null && CoasterCartTrackSnap.shouldDisengageAtOpenEndHit((Level)level, graph, hit, openEndRefs)) {
-            ENDPOINT_COOLDOWN_UNTIL.put(subId, gameTime + 5L);
-            CLIENT_DISENGAGED.put(subId, Boolean.TRUE);
-            return false;
-        }
-        if (cooldownActive && hit != null) {
-            CLIENT_DISENGAGED.put(subId, Boolean.TRUE);
-            return false;
-        }
-        if (hit == null) {
-            CLIENT_DISENGAGED.put(subId, Boolean.TRUE);
-            return false;
-        }
-        if (wasDisengaged && !CoasterCartTrackSnap.normalsAllowReengage(sub, (Level)level, hit)) {
-            CLIENT_DISENGAGED.put(subId, Boolean.TRUE);
-            return false;
-        }
-        CLIENT_DISENGAGED.put(subId, Boolean.FALSE);
-        return true;
-    }
+   static boolean applyEngagementState(
+      ClientLevel level,
+      CoasterPathGraph graph,
+      SubLevel sub,
+      UUID subId,
+      @Nullable CoasterPathTrackFrame.GraphHit hit,
+      List<CoasterPathTraceEndpoints.OpenEndRef> openEndRefs
+   ) {
+      long gameTime = level.getGameTime();
+      long cooldownUntil = ENDPOINT_COOLDOWN_UNTIL.getOrDefault(subId, 0L);
+      boolean cooldownActive = gameTime < cooldownUntil;
+      boolean wasDisengaged = CLIENT_DISENGAGED.getOrDefault(subId, true);
+      if (hit != null && CoasterCartTrackSnap.shouldDisengageAtOpenEndHit(level, graph, hit, openEndRefs)) {
+         ENDPOINT_COOLDOWN_UNTIL.put(subId, gameTime + 5L);
+         CLIENT_DISENGAGED.put(subId, Boolean.TRUE);
+         return false;
+      } else if (cooldownActive && hit != null) {
+         CLIENT_DISENGAGED.put(subId, Boolean.TRUE);
+         return false;
+      } else if (hit == null) {
+         CLIENT_DISENGAGED.put(subId, Boolean.TRUE);
+         return false;
+      } else if (wasDisengaged && !CoasterCartTrackSnap.normalsAllowReengage(sub, level, hit)) {
+         CLIENT_DISENGAGED.put(subId, Boolean.TRUE);
+         return false;
+      } else {
+         CLIENT_DISENGAGED.put(subId, Boolean.FALSE);
+         return true;
+      }
+   }
 
-    @Deprecated
-    public static boolean updateAndIsEngaged(ClientLevel level, SubLevel sub, Vec3 bearingWorld, CoasterPathGraph pathGraph, List<CoasterPathTraceEndpoints.OpenEndRef> openEndRefs) {
-        UUID id = sub.getUniqueId();
-        if (sub.isRemoved()) {
-            CoasterCartClientEngagement.clearSubState(id);
-            return false;
-        }
-        boolean wasDisengaged = CLIENT_DISENGAGED.getOrDefault(id, true);
-        boolean staffGrabbing = PhysicsStaffClientDragProbe.isAnyPhysicsStaffGrabbing((Level)level, sub);
-        double searchSq = CoasterCartTrackSnap.engagedTrackSearchDistSq(wasDisengaged, staffGrabbing);
-        CoasterPathTrackFrame.GraphHit hit = pathGraph.edges().isEmpty() ? null : CoasterPathTrackFrame.nearestGraphHit((Level)level, pathGraph, bearingWorld, searchSq);
-        hit = CoasterCartRailSnapEligibility.filterHitForBearing(sub, (Level)level, hit);
-        return CoasterCartClientEngagement.applyEngagementState(level, pathGraph, sub, id, hit, openEndRefs);
-    }
+   @Deprecated
+   public static boolean updateAndIsEngaged(
+      ClientLevel level, SubLevel sub, Vec3 bearingWorld, CoasterPathGraph pathGraph, List<CoasterPathTraceEndpoints.OpenEndRef> openEndRefs
+   ) {
+      UUID id = sub.getUniqueId();
+      if (sub.isRemoved()) {
+         clearSubState(id);
+         return false;
+      } else {
+         boolean wasDisengaged = CLIENT_DISENGAGED.getOrDefault(id, true);
+         boolean staffGrabbing = PhysicsStaffClientDragProbe.isAnyPhysicsStaffGrabbing(level, sub);
+         double searchSq = CoasterCartTrackSnap.engagedTrackSearchDistSq(wasDisengaged, staffGrabbing);
+         CoasterPathTrackFrame.GraphHit hit = pathGraph.edges().isEmpty()
+            ? null
+            : CoasterPathTrackFrame.nearestGraphHit(level, pathGraph, bearingWorld, searchSq);
+         hit = CoasterCartRailSnapEligibility.filterHitForBearing(sub, level, hit);
+         return applyEngagementState(level, pathGraph, sub, id, hit, openEndRefs);
+      }
+   }
 
-    @Deprecated
-    @Nullable
-    public static CoasterPathTrackFrame.GraphHit nearestHitForVisual(Level level, CoasterPathGraph pathGraph, Vec3 bearingWorld, float partialTick) {
-        if (pathGraph.edges().isEmpty()) {
-            return null;
-        }
-        return CoasterPathTrackFrame.nearestGraphHit(level, pathGraph, bearingWorld, 6.25, Double.valueOf(partialTick));
-    }
+   @Deprecated
+   @Nullable
+   public static CoasterPathTrackFrame.GraphHit nearestHitForVisual(Level level, CoasterPathGraph pathGraph, Vec3 bearingWorld, float partialTick) {
+      return pathGraph.edges().isEmpty() ? null : CoasterPathTrackFrame.nearestGraphHit(level, pathGraph, bearingWorld, 6.25, (double)partialTick);
+   }
 
-    public static boolean isSnapEngagedBlock(Level level, BlockPos bearingCell) {
-        CoasterCartBlock bearingBlock;
-        BlockState st = level.getBlockState(bearingCell);
-        return st.is((Block)(bearingBlock = (CoasterCartBlock)((Object)SimulatedCoastersBlocks.COASTER_CART_BLOCK.get()))) && (Boolean)st.getValue((Property)CoasterCartBlock.SNAP_ENGAGED) != false;
-    }
+   public static boolean isSnapEngagedBlock(Level level, BlockPos bearingCell) {
+      BlockState st = level.getBlockState(bearingCell);
+      CoasterCartBlock bearingBlock = (CoasterCartBlock)SimulatedCoastersBlocks.COASTER_CART_BLOCK.get();
+      return st.is(bearingBlock) && (Boolean)st.getValue(CoasterCartBlock.SNAP_ENGAGED);
+   }
 
-    @Deprecated
-    @Nullable
-    public static CoasterPathTrackFrame.GraphHit nearestHitWhenSnapEngaged(SubLevel bearingSub, Level level, CoasterPathGraph pathGraph, Vec3 bearingLogicalWorld, Vec3 bearingVisualWorld, float partialTick, boolean snapEngaged) {
-        if (!snapEngaged || pathGraph.edges().isEmpty()) {
-            return null;
-        }
-        CoasterPathTrackFrame.GraphHit hit = CoasterCartClientEngagement.nearestHitForVisual(level, pathGraph, bearingVisualWorld, partialTick);
-        if (hit == null) {
+   @Deprecated
+   @Nullable
+   public static CoasterPathTrackFrame.GraphHit nearestHitWhenSnapEngaged(
+      SubLevel bearingSub, Level level, CoasterPathGraph pathGraph, Vec3 bearingLogicalWorld, Vec3 bearingVisualWorld, float partialTick, boolean snapEngaged
+   ) {
+      if (snapEngaged && !pathGraph.edges().isEmpty()) {
+         CoasterPathTrackFrame.GraphHit hit = nearestHitForVisual(level, pathGraph, bearingVisualWorld, partialTick);
+         if (hit == null) {
             hit = CoasterPathTrackFrame.nearestGraphHit(level, pathGraph, bearingLogicalWorld, 6.25);
-        }
-        return CoasterCartRailSnapEligibility.filterHitForBearing(bearingSub, level, hit);
-    }
-}
+         }
 
+         return CoasterCartRailSnapEligibility.filterHitForBearing(bearingSub, level, hit);
+      } else {
+         return null;
+      }
+   }
+}

@@ -1,13 +1,13 @@
 plugins {
     id 'java'
-    id 'net.neoforged.moddev' version '2.0.78-beta'
+    id 'net.neoforged.moddev' version '2.0.141'
 }
 
-version = '0.2.0-SNAPSHOT'
+version = '0.1.5'
 group = 'dev.silvergold.simulatedcoasters'
 
 base {
-    archivesName = 'simulatedcoasters-fork'
+    archivesName = 'simulatedcoasters'
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -64,10 +64,10 @@ tasks.withType(ProcessResources).configureEach {
         neo_version         : '21.1.228',
         loader_version_range: '[4,)',
         mod_id              : 'simulatedcoasters',
-        mod_name            : 'Create: Coasters Simulated (Fork)',
+        mod_name            : 'Create: Coasters Simulated',
         mod_license         : 'MIT',
         mod_version         : project.version,
-        mod_description     : 'Create add-on: rollercoasters using Create mechanisms with Sable physics. (Fork)',
+        mod_description     : 'Create add-on: rollercoasters using Create mechanisms with Sable physics.',
     ]
     inputs.properties replaceProperties
     filesMatching(['META-INF/neoforge.mods.toml']) {

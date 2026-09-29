@@ -1,20 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- * 
- * Could not load the following classes:
- *  com.simibubi.create.content.kinetics.KineticDebugger
- *  net.minecraft.client.Minecraft
- *  net.minecraft.client.multiplayer.ClientLevel
- *  net.minecraft.core.HolderLookup$Provider
- *  net.minecraft.core.RegistryAccess
- *  net.minecraft.core.registries.Registries
- *  net.minecraft.nbt.CompoundTag
- *  net.minecraft.nbt.ListTag
- *  net.minecraft.resources.ResourceKey
- *  net.minecraft.resources.ResourceLocation
- *  net.minecraft.world.level.Level
- *  org.jetbrains.annotations.Nullable
- */
 package dev.silvergold.simulatedcoasters.client.track.graph;
 
 import com.simibubi.create.content.kinetics.KineticDebugger;
@@ -28,9 +11,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -40,98 +21,93 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 public final class CoasterPathGraphManagerClient {
-    private static final Map<ResourceKey<Level>, CoasterPathGraph> CLIENT_GRAPHS = new HashMap<ResourceKey<Level>, CoasterPathGraph>();
-    private static final Set<ResourceKey<Level>> CLIENT_TANGENT_ALIGNED = new HashSet<ResourceKey<Level>>();
-    @Nullable
-    private static CompoundTag pendingClientGraphSyncRoot;
+   private static final Map<ResourceKey<Level>, CoasterPathGraph> CLIENT_GRAPHS = new HashMap<>();
+   private static final Set<ResourceKey<Level>> CLIENT_TANGENT_ALIGNED = new HashSet<>();
+   @Nullable
+   private static CompoundTag pendingClientGraphSyncRoot;
 
-    private CoasterPathGraphManagerClient() {
-    }
+   private CoasterPathGraphManagerClient() {
+   }
 
-    public static CoasterPathGraph get(Level level) {
-        CoasterPathGraphManagerClient.tryFlushPendingClientGraphSync();
-        CoasterPathGraph g = CLIENT_GRAPHS.computeIfAbsent((ResourceKey<Level>)level.dimension(), d -> new CoasterPathGraph());
-        CoasterPathGraphManagerClient.ensureClientTangentAligned(level, g);
-        return g;
-    }
+   public static CoasterPathGraph get(Level level) {
+      tryFlushPendingClientGraphSync();
+      CoasterPathGraph g = CLIENT_GRAPHS.computeIfAbsent(level.dimension(), d -> new CoasterPathGraph());
+      ensureClientTangentAligned(level, g);
+      return g;
+   }
 
-    private static void ensureClientTangentAligned(Level level, CoasterPathGraph g) {
-        if (!level.isClientSide() || g.edges().isEmpty()) {
-            return;
-        }
-        ResourceKey dim = level.dimension();
-        if (CLIENT_TANGENT_ALIGNED.contains(dim)) {
-            return;
-        }
-        CoasterPathTangentOrientation.alignConnectedComponents(level, g);
-        CLIENT_TANGENT_ALIGNED.add((ResourceKey<Level>)dim);
-    }
+   private static void ensureClientTangentAligned(Level level, CoasterPathGraph g) {
+      if (level.isClientSide() && !g.edges().isEmpty()) {
+         ResourceKey<Level> dim = level.dimension();
+         if (!CLIENT_TANGENT_ALIGNED.contains(dim)) {
+            CoasterPathTangentOrientation.alignConnectedComponents(level, g);
+            CLIENT_TANGENT_ALIGNED.add(dim);
+         }
+      }
+   }
 
-    public static void applyClientSync(CompoundTag root) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null) {
-            pendingClientGraphSyncRoot = root;
-            return;
-        }
-        CoasterPathGraphManagerClient.applyClientGraphSyncNow(root);
-    }
+   public static void applyClientSync(CompoundTag root) {
+      Minecraft mc = Minecraft.getInstance();
+      if (mc.level == null) {
+         pendingClientGraphSyncRoot = root;
+      } else {
+         applyClientGraphSyncNow(root);
+      }
+   }
 
-    private static void tryFlushPendingClientGraphSync() {
-        if (pendingClientGraphSyncRoot == null) {
-            return;
-        }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null) {
-            return;
-        }
-        CompoundTag root = pendingClientGraphSyncRoot;
-        pendingClientGraphSyncRoot = null;
-        CoasterPathGraphManagerClient.applyClientGraphSyncNow(root);
-    }
+   private static void tryFlushPendingClientGraphSync() {
+      if (pendingClientGraphSyncRoot != null) {
+         Minecraft mc = Minecraft.getInstance();
+         if (mc.level != null) {
+            CompoundTag root = pendingClientGraphSyncRoot;
+            pendingClientGraphSyncRoot = null;
+            applyClientGraphSyncNow(root);
+         }
+      }
+   }
 
-    private static void applyClientGraphSyncNow(CompoundTag root) {
-        Minecraft mc = Minecraft.getInstance();
-        ClientLevel clientLevel = mc.level;
-        if (clientLevel == null) {
-            pendingClientGraphSyncRoot = root;
-            return;
-        }
-        CLIENT_TANGENT_ALIGNED.clear();
-        ListTag list = root.getList("Dimensions", 10);
-        RegistryAccess registries = clientLevel.registryAccess();
-        for (int i = 0; i < list.size(); ++i) {
+   private static void applyClientGraphSyncNow(CompoundTag root) {
+      Minecraft mc = Minecraft.getInstance();
+      Level clientLevel = mc.level;
+      if (clientLevel == null) {
+         pendingClientGraphSyncRoot = root;
+      } else {
+         CLIENT_TANGENT_ALIGNED.clear();
+         ListTag list = root.getList("Dimensions", 10);
+         Provider registries = clientLevel.registryAccess();
+
+         for (int i = 0; i < list.size(); i++) {
             CompoundTag dim = list.getCompound(i);
-            ResourceLocation id = ResourceLocation.parse((String)dim.getString("Dimension"));
-            ResourceKey key = ResourceKey.create((ResourceKey)Registries.DIMENSION, (ResourceLocation)id);
-            try {
-                CoasterPathGraph g = CoasterPathGraph.read(dim.getCompound("Graph"), (HolderLookup.Provider)registries);
-                CLIENT_GRAPHS.put((ResourceKey<Level>)key, g);
-                if (!clientLevel.dimension().equals(key)) continue;
-                CoasterPathTangentOrientation.alignConnectedComponents((Level)clientLevel, g);
-                CLIENT_TANGENT_ALIGNED.add((ResourceKey<Level>)key);
-                continue;
-            }
-            catch (Exception ex) {
-                SimulatedCoasters.LOGGER.error("Failed to deserialize coaster path graph for {}", (Object)id, (Object)ex);
-            }
-        }
-    }
+            ResourceLocation id = ResourceLocation.parse(dim.getString("Dimension"));
+            ResourceKey<Level> key = ResourceKey.create(Registries.DIMENSION, id);
 
-    public static void clientTick() {
-        CoasterPathGraphManagerClient.tryFlushPendingClientGraphSync();
-        Minecraft mc = Minecraft.getInstance();
-        ClientLevel level = mc.level;
-        if (level == null) {
-            return;
-        }
-        if (!KineticDebugger.isF3DebugModeActive()) {
+            try {
+               CoasterPathGraph g = CoasterPathGraph.read(dim.getCompound("Graph"), registries);
+               CLIENT_GRAPHS.put(key, g);
+               if (clientLevel.dimension().equals(key)) {
+                  CoasterPathTangentOrientation.alignConnectedComponents(clientLevel, g);
+                  CLIENT_TANGENT_ALIGNED.add(key);
+               }
+            } catch (Exception var10) {
+               SimulatedCoasters.LOGGER.error("Failed to deserialize coaster path graph for {}", id, var10);
+            }
+         }
+      }
+   }
+
+   public static void clientTick() {
+      tryFlushPendingClientGraphSync();
+      Minecraft mc = Minecraft.getInstance();
+      Level level = mc.level;
+      if (level != null) {
+         if (!KineticDebugger.isF3DebugModeActive()) {
             CoasterPathGraphDebugRenderer.clearContinuityTraceState();
             CoasterCartDebugRenderer.clear();
-            return;
-        }
-        CoasterPathGraph graph = CoasterPathGraphManagerClient.get((Level)level);
-        CoasterPathGraphDebugRenderer.render((Level)level, graph);
-        CoasterCartDebugRenderer.render((Level)level, graph);
-    }
+         } else {
+            CoasterPathGraph graph = get(level);
+            CoasterPathGraphDebugRenderer.render(level, graph);
+            CoasterCartDebugRenderer.render(level, graph);
+         }
+      }
+   }
 }
-

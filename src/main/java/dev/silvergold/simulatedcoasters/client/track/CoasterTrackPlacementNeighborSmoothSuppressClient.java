@@ -1,15 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- * 
- * Could not load the following classes:
- *  com.simibubi.create.AllKeys
- *  net.minecraft.client.Minecraft
- *  net.minecraft.network.protocol.common.custom.CustomPacketPayload
- *  net.minecraft.world.item.ItemStack
- *  net.neoforged.api.distmarker.Dist
- *  net.neoforged.api.distmarker.OnlyIn
- *  net.neoforged.neoforge.network.PacketDistributor
- */
 package dev.silvergold.simulatedcoasters.client.track;
 
 import com.simibubi.create.AllKeys;
@@ -22,44 +10,41 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-@OnlyIn(value=Dist.CLIENT)
+@OnlyIn(Dist.CLIENT)
 public final class CoasterTrackPlacementNeighborSmoothSuppressClient {
-    private static boolean lastSentSuppress;
+   private static boolean lastSentSuppress;
 
-    private CoasterTrackPlacementNeighborSmoothSuppressClient() {
-    }
+   private CoasterTrackPlacementNeighborSmoothSuppressClient() {
+   }
 
-    public static boolean isSuppressNeighborSmoothing() {
-        return AllKeys.altDown();
-    }
+   public static boolean isSuppressNeighborSmoothing() {
+      return AllKeys.altDown();
+   }
 
-    public static void clientTick(Minecraft mc) {
-        if (mc.player == null) {
-            CoasterTrackPlacementNeighborSmoothSuppressClient.syncSuppress(false);
-            return;
-        }
-        if (!CoasterTrackPlacementNeighborSmoothSuppressClient.tracksPlacementContext(mc)) {
-            CoasterTrackPlacementNeighborSmoothSuppressClient.syncSuppress(false);
-            return;
-        }
-        CoasterTrackPlacementNeighborSmoothSuppressClient.syncSuppress(CoasterTrackPlacementNeighborSmoothSuppressClient.isSuppressNeighborSmoothing());
-    }
+   public static void clientTick(Minecraft mc) {
+      if (mc.player == null) {
+         syncSuppress(false);
+      } else if (!tracksPlacementContext(mc)) {
+         syncSuppress(false);
+      } else {
+         syncSuppress(isSuppressNeighborSmoothing());
+      }
+   }
 
-    private static boolean tracksPlacementContext(Minecraft mc) {
-        ItemStack main = mc.player.getMainHandItem();
-        if (main.getItem() instanceof CoasterTrackItem) {
-            return true;
-        }
-        ItemStack off = mc.player.getOffhandItem();
-        return off.getItem() instanceof CoasterTrackItem;
-    }
+   private static boolean tracksPlacementContext(Minecraft mc) {
+      ItemStack main = mc.player.getMainHandItem();
+      if (main.getItem() instanceof CoasterTrackItem) {
+         return true;
+      } else {
+         ItemStack off = mc.player.getOffhandItem();
+         return off.getItem() instanceof CoasterTrackItem;
+      }
+   }
 
-    private static void syncSuppress(boolean suppress) {
-        if (suppress == lastSentSuppress) {
-            return;
-        }
-        lastSentSuppress = suppress;
-        PacketDistributor.sendToServer((CustomPacketPayload)new CoasterTrackPlacementNeighborSmoothSuppressPayload(suppress), (CustomPacketPayload[])new CustomPacketPayload[0]);
-    }
+   private static void syncSuppress(boolean suppress) {
+      if (suppress != lastSentSuppress) {
+         lastSentSuppress = suppress;
+         PacketDistributor.sendToServer(new CoasterTrackPlacementNeighborSmoothSuppressPayload(suppress), new CustomPacketPayload[0]);
+      }
+   }
 }
-
