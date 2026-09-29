@@ -1,0 +1,76 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev' version '2.0.78-beta'
+}
+
+version = '0.2.0-SNAPSHOT'
+group = 'dev.silvergold.simulatedcoasters'
+
+base {
+    archivesName = 'simulatedcoasters-fork'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = '21.1.228'
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+        }
+    }
+
+    mods {
+        simulatedcoasters {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.tterrag.com/' }           // Create / Flywheel
+    maven { url = 'https://mvn.devos.one/snapshots/' }      // Create Fabric / etc
+    maven { url = 'https://maven.createmod.net/' }          // Create mod maven
+    maven { url = 'https://api.modrinth.com/maven' }        // Modrinth maven (for Sable, etc.)
+    maven { url = 'https://cursemaven.com' }                // CurseForge maven
+    flatDir { dirs 'libs' }                                 // Local JARs fallback
+}
+
+dependencies {
+    // Sable physics library (from Modrinth maven) — adjust version as needed
+    // If Modrinth maven doesn't work, place the JAR in libs/
+    // implementation fg.deobf("maven.modrinth:sable:VERSION")
+
+    // Create mod
+    // implementation "com.simibubi.create:create-neoforge-1.21.1:6.0.10"
+
+    // Flywheel
+    // implementation "dev.engine-room.flywheel:flywheel-neoforge-api-1.21.1:1.0.6"
+    // implementation "dev.engine-room.flywheel:flywheel-neoforge-1.21.1:1.0.6"
+
+    // For now, use local JARs for compile-only dependencies
+    compileOnly fileTree(dir: 'libs', include: ['*.jar'])
+}
+
+// Process resources with mod version
+tasks.withType(ProcessResources).configureEach {
+    var replaceProperties = [
+        minecraft_version   : '1.21.1',
+        neo_version         : '21.1.228',
+        loader_version_range: '[4,)',
+        mod_id              : 'simulatedcoasters',
+        mod_name            : 'Create: Coasters Simulated (Fork)',
+        mod_license         : 'MIT',
+        mod_version         : project.version,
+        mod_description     : 'Create add-on: rollercoasters using Create mechanisms with Sable physics. (Fork)',
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
